@@ -159,6 +159,18 @@ public class TeamController {
         return teamMemberService.getTeamMembers(userId, teamId);
     }
 
+    @Operation(summary = "Filter team members by member role and current user's role")
+    @GetMapping("/{teamId}/members/filter")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("isAuthenticated()")
+    public List<TeamMemberResponseDTO> filterTeamMembers(
+            @PathVariable UUID userId,
+            @PathVariable UUID teamId,
+            @RequestParam(required = false) String memberRole,
+            @RequestParam(required = false) String currentUserRole) {
+        return teamMemberService.filterTeamMembers(userId, teamId, memberRole, currentUserRole);
+    }
+
     @Operation(summary = "Update a team member")
     @PutMapping("/{teamId}/members/{memberId}")
     @SecurityRequirement(name = "bearerAuth")
