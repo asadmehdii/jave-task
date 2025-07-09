@@ -25,6 +25,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
     List<TeamMember> findByContactIdAndLeftAtIsNull(UUID contactId);
 
+    List<TeamMember> findByTeamIdAndRoleAndLeftAtIsNull(UUID teamId, String role);
+
     default Optional<TeamMember> findByTeamIdAndUserIdAndLeftAtIsNull(UUID teamId, UUID userId) {
         List<TeamMember> members = findAllByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId);
         return members.isEmpty() ? Optional.empty() : Optional.of(members.get(0));

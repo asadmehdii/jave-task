@@ -811,4 +811,20 @@ public class TeamMemberService {
 
         return contactRepository.save(contact);
     }
+
+    @Transactional(readOnly = true)
+    public List<TeamMemberResponseDTO> filterTeamMembers(UUID userId, UUID teamId, String memberRole, String currentUserRole) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
+        List<TeamMember> members;
+        if ("PARENT".equalsIgnoreCase(currentUserRole) || "PARENT_CONTACT".equalsIgnoreCase(currentUserRole)) {
+            members = teamMemberRepository.findByTeamIdAndRoleAndLeftAtIsNull(teamId, "PLAYER");
+        } else if (memberRole != null && !memberRole.isEmpty()) {
+            members = teamMemberRepository.findByTeamIdAndRoleAndLeftAtIsNull(teamId, memberRole);
+        } else {
+            members = teamMemberRepository.findByTeamIdAndLeftAtIsNull(teamId);
+        }
+        return mapTeamMembersToResponseDTOs(members);
+    }
 }
