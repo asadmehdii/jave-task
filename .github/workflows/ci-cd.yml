@@ -1,0 +1,41 @@
+name: Backend CI/CD
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**'
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4.5.0
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+    - name: Build with Maven
+      run: |
+        mvn clean package
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
+    - name: Upload JAR to S3
+      run: |
+        aws s3 cp target/*.jar s3://${{ secrets.AWS_S3_BUCKET }}/backend/latest.jar
+    - name: Build & Deploy
+      env:
+          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          HOSTNAME: ec2-18-219-198-202.us-east-2.compute.amazonaws.com
+          USER_NAME: ubuntu
+      run: |
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '
+            sudo systemctl stop biosteel-api.service &&
+            aws s3 cp s3://biosteel-packages/backend/latest.jar /opt/biosteel-api/app.jar &&
+            sudo systemctl start biosteel-api.service
+            '
